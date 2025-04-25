@@ -1,24 +1,30 @@
-import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
+import * as PIXI from 'pixi.js';
+import './style.css';
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+// Create PixiJS application
+const app = new PIXI.Application({
+  width: 800,
+  height: 600,
+  backgroundColor: 0x1099bb,
+  resolution: window.devicePixelRatio || 1,
+});
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+// Add canvas to the page
+document.getElementById('app')?.appendChild(app.view as HTMLCanvasElement);
+
+// Create a container for our content
+const container = new PIXI.Container();
+app.stage.addChild(container);
+
+// Add a sprite or graphics here
+const graphics = new PIXI.Graphics();
+graphics.beginFill(0xff0000);
+graphics.drawCircle(app.screen.width / 2, app.screen.height / 2, 50);
+graphics.endFill();
+container.addChild(graphics);
+
+// Animation loop
+app.ticker.add(() => {
+  // Add your game logic here
+  graphics.rotation += 0.01;
+});
