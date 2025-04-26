@@ -1,7 +1,8 @@
-import { Application, Container } from 'pixi.js';
+import { Application, Container, Texture } from 'pixi.js';
 import { BaseScene } from '../../core/BaseScene';
 import { SceneManager } from '../../core/SceneManager';
 import { Character, CharacterData, CharacterPosition } from "./Character";
+import { loadTextureFromURL } from '../../core/textureLoader';
 
 interface DialogueEntry {
     name: string;
@@ -20,6 +21,7 @@ interface MagicWordsData {
 export class MagicWordsScene extends BaseScene {
     private gameContainer: Container;
     private characters: Map<string, Character> = new Map();
+    private emojiTextures: Map<string, Texture> = new Map();
     private readonly API_URL = "https://private-624120-softgamesassignment.apiary-mock.com/v2/magicwords";
     private dialogue: DialogueEntry[] = [];
     private currentDialogueIndex: number = 0;
@@ -43,6 +45,18 @@ export class MagicWordsScene extends BaseScene {
             const response = await fetch(this.API_URL);
             const data: MagicWordsData = await response.json();
 
+            // Load emoji textures first
+            console.log('Loading emoji textures...');
+            for (const emoji of data.emojies) {
+                try {
+                    const texture = await loadTextureFromURL(emoji.url);
+                    this.emojiTextures.set(emoji.name, texture);
+                    console.log(`Loaded emoji texture: ${emoji.name}`);
+                } catch (error) {
+                    console.error(`Failed to load emoji texture: ${emoji.name}`, error);
+                }
+            }
+
             // Store dialogue for later use
             this.dialogue = data.dialogue;
 
@@ -57,7 +71,6 @@ export class MagicWordsScene extends BaseScene {
             // Create characters
             data.avatars.forEach((avatar) => {
                 const position = positionMap[avatar.name] ?? 0;
-                console.log("Creating character:", avatar.name, avatar.url);
                 const character = new Character(this.app, avatar, position);
                 this.gameContainer.addChild(character);
                 character.updateDimensions(this.app.screen.width, this.app.screen.height);
@@ -79,6 +92,10 @@ export class MagicWordsScene extends BaseScene {
         }
     }
 
+    public getEmojiTexture(name: string): Texture | undefined {
+        return this.emojiTextures.get(name);
+    }
+
     private startDialogue(): void {
         this.showNextDialogue();
     }
@@ -89,8 +106,6 @@ export class MagicWordsScene extends BaseScene {
             window.clearTimeout(this.dialogueTimeout);
             this.dialogueTimeout = null;
         }
-
-        console.log("Showing next dialogue:", this.currentDialogueIndex, this.dialogue.length);
 
         // Stop all characters from talking
         this.characters.forEach(character => character.stopTalking());
@@ -109,11 +124,9 @@ export class MagicWordsScene extends BaseScene {
         const entry = this.dialogue[this.currentDialogueIndex];
         const character = this.characters.get(entry.name) || this.characters.get("");
 
-        console.log("entry/char:", entry, character);
-
         if (character) {
-            // Show the dialogue text
-            character.say(entry.text);
+            // Show the dialogue text with emoji textures
+            character.say(entry.text, this.emojiTextures);
 
             // Schedule next dialogue
             this.dialogueTimeout = window.setTimeout(() => {

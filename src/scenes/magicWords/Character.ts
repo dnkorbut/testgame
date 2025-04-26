@@ -1,6 +1,7 @@
 import { Container, Sprite, Texture, Text, TextStyle, Graphics } from 'pixi.js';
 import { SpeechBubble } from './SpeechBubble';
 import { Application } from 'pixi.js';
+import { loadTextureFromURL } from '../../core/textureLoader';
 
 export enum CharacterPosition {
     TopLeft,
@@ -39,7 +40,6 @@ export class Character extends Container {
     constructor(app: Application, data: CharacterData, position: number) {
         super();
         this.app = app;
-        console.log("Character constructor called with:", data);
         this.characterPosition = position;
         this.characterName = data.name;
         this.facing = position === 0 ? 'right' : 'left';
@@ -87,26 +87,12 @@ export class Character extends Container {
 
     private async loadImage(url: string): Promise<void> {
         try {
-            // Create a new Image element
-            const image = new Image();
-            image.crossOrigin = 'anonymous';  // Enable CORS
-
-            // Create a promise to handle image loading
-            await new Promise((resolve, reject) => {
-                image.onload = () => resolve(image);
-                image.onerror = reject;
-                image.src = url;
-            });
-
-            this.characterWidth = image.width;
-            this.characterHeight = image.height;
-
-            // Create a texture from the loaded image
-            const texture = Texture.from(image);
+            const texture = await loadTextureFromURL(url);
 
             if (!this.destroyed) {
                 this.sprite = new Sprite(texture);
-
+                this.characterWidth = texture.width;
+                this.characterHeight = texture.height;
                 this.sprite.width = this.characterWidth;
                 this.sprite.height = this.characterHeight;
                 this.sprite.scale.x = this.facing === 'left' ? -1 : 1;
@@ -159,7 +145,7 @@ export class Character extends Container {
         this.updatePosition();
     }
 
-    public async say(message: string): Promise<void> {
+    public async say(message: string, emojiTextures?: Map<string, Texture>): Promise<void> {
         try {
             // Wait for sprite to load if it hasn't already
             if (this.spriteLoadingPromise) {
@@ -175,10 +161,9 @@ export class Character extends Container {
                 this.speechBubble.destroy();
             }
 
-            console.log("Creating speech bubble with message:", message);
             const isTopCharacter = this.characterPosition === CharacterPosition.TopLeft ||
                 this.characterPosition === CharacterPosition.TopRight;
-            this.speechBubble = new SpeechBubble(message, isTopCharacter);
+            this.speechBubble = new SpeechBubble(message, isTopCharacter, emojiTextures);
 
             if (this.characterPosition === CharacterPosition.BottomRight ||
                 this.characterPosition === CharacterPosition.TopRight) {
@@ -192,9 +177,6 @@ export class Character extends Container {
             } else {
                 this.speechBubble.y = -this.sprite.height - this.speechBubble.height;
             }
-
-            console.log("Speech bubble position:", this.speechBubble.x, this.speechBubble.y);
-            console.log("Character dimensions:", this.sprite.width, this.sprite.height);
 
             this.addChild(this.speechBubble);
         } catch (error) {

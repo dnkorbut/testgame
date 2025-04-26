@@ -1,4 +1,4 @@
-import { Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { Container, Graphics, Text, TextStyle, Sprite, Texture, CanvasTextMetrics } from 'pixi.js';
 
 export class SpeechBubble extends Container {
     private background: Graphics;
@@ -9,11 +9,10 @@ export class SpeechBubble extends Container {
     private readonly triangleHeight = 10;
     private pointUp: boolean = false;
 
-    constructor(message: string, pointUp: boolean = false) {
+    constructor(message: string, pointUp: boolean = false, emojiTextures?: Map<string, Texture>) {
         super();
 
         this.pointUp = pointUp;
-        console.log('Creating speech bubble with message:', message, 'pointing up:', pointUp);
 
         // Create text container
         this.textContainer = new Container();
@@ -28,8 +27,53 @@ export class SpeechBubble extends Container {
             wordWrapWidth: 200
         });
 
-        this.text = new Text({ text: message, style });
+        // First replace emojis with placeholders and store their info
+        const emojiPositions: { name: string, index: number }[] = [];
+        let modifiedMessage = message;
+        const regex = /\{(\w+)\}/g;
+        let match;
+
+        while ((match = regex.exec(message)) !== null) {
+            const emojiName = match[1];
+            if (emojiTextures?.has(emojiName)) {
+                emojiPositions.push({
+                    name: emojiName,
+                    index: match.index
+                });
+                modifiedMessage = modifiedMessage.replace(match[0], '\u00A0\u00A0\u00A0\u00A0');
+            } else {
+                modifiedMessage = modifiedMessage.replace(match[0], '');
+            }
+        }
+
+        this.text = new Text({ text: modifiedMessage, style });
         this.textContainer.addChild(this.text);
+
+        // If we have emoji textures, add them
+        if (emojiTextures) {
+            const lineHeight = this.text.style.fontSize || 16;
+
+            emojiPositions.forEach(({ name, index }) => {
+                const texture = emojiTextures.get(name);
+                if (texture) {
+                    // Create emoji sprite
+                    const emoji = new Sprite(texture);
+
+                    // Scale emoji to match text height
+                    const scale = lineHeight / emoji.height;
+                    emoji.scale.set(scale);
+
+                    const textMetrics = CanvasTextMetrics.measureText(this.text.text.substring(0, index), this.text.style);
+                    console.log(textMetrics);
+                    emoji.x = this.text.x + textMetrics.lineWidths[textMetrics.lineWidths.length - 1] + emoji.width
+                    emoji.y = this.text.y + textMetrics.height - emoji.height / 2
+
+                    this.textContainer.addChild(emoji);
+
+                    // this.text.text = this.text.text.substring(0, index) + '    ' + this.text.text.substring(index + 4);
+                }
+            });
+        }
 
         // Create bubble background
         this.background = new Graphics();
@@ -47,11 +91,8 @@ export class SpeechBubble extends Container {
         // Adjust container position if pointing up
         if (this.pointUp) {
             this.y = -this.triangleHeight / 2;
-            // Move text container down to compensate for the triangle
             this.textContainer.y = this.triangleHeight / 2;
         }
-
-        console.log('Final bubble dimensions:', { width: this.width, height: this.height });
     }
 
     private updateTextPosition(): void {
@@ -63,8 +104,6 @@ export class SpeechBubble extends Container {
     private drawBubble(): void {
         const width = this.text.width + this.padding * 2;
         const height = this.text.height + this.padding * 2;
-
-        console.log('Drawing bubble with dimensions:', { width, height });
 
         this.background.clear();
 
