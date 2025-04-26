@@ -64,8 +64,8 @@ export class AceOfShadowsScene extends BaseScene {
         this.cardStacks[0].updateWidth(width / 3);
 
         for (let i = 0; i < 144; i++) {
-            const suit = i % 4;
-            const value = i % 13;
+            const suit = Math.floor(Math.random() * 4);
+            const value = Math.floor(Math.random() * 13);
             const card = new Card(value, suit, this.cardTextures, this.cardBackTexture);
             this.cards.push(card);
             this.cardStacks[0].push(card);

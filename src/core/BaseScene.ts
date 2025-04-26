@@ -13,6 +13,7 @@ export abstract class BaseScene extends Container implements Scene {
         this.app = app;
         this.sceneManager = sceneManager;
         this.backButton = this.createBackButton();
+        this.backButton.visible = false;
         this.addChild(this.backButton);
         console.log('BaseScene container created');
     }
@@ -52,6 +53,7 @@ export abstract class BaseScene extends Container implements Scene {
         this.app.stage.addChild(this);
         console.log('BaseScene container added to stage');
         await this.onInit();
+        this.backButton.visible = true;
         console.log('BaseScene init complete');
     }
 

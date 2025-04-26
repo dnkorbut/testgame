@@ -1,11 +1,13 @@
-import { Application, Container, Graphics } from 'pixi.js';
+import { Application, Container, AnimatedSprite, Assets, Texture, Graphics } from 'pixi.js';
 import { BaseScene } from '../../core/BaseScene';
 import { SceneManager } from '../../core/SceneManager';
 
 export class PhoenixFlameScene extends BaseScene {
     private gameContainer: Container;
-    private particles: Graphics[] = [];
-    private readonly MAX_PARTICLES = 100;
+    private flameSprites: AnimatedSprite[] = [];
+    private readonly MAX_FLAMES = 10;
+    private readonly SPREAD = 150;
+    private flameTextures: Texture[] = [];
 
     constructor(app: Application, sceneManager: SceneManager) {
         super(app, sceneManager);
@@ -14,56 +16,92 @@ export class PhoenixFlameScene extends BaseScene {
     }
 
     protected async onInit(): Promise<void> {
-        // Create initial particles
-        for (let i = 0; i < this.MAX_PARTICLES; i++) {
-            this.createParticle();
+        this.app.renderer.background.color = 0x000000;
+        await Assets.load('https://pixijs.com/assets/spritesheet/mc.json');
+
+        for (let i = 0; i < 26; i++) {
+            const texture = Texture.from(`Explosion_Sequence_A ${i + 1}.png`);
+            this.flameTextures.push(texture);
+        }
+
+        for (let i = 0; i < this.MAX_FLAMES; i++) {
+            this.createFlame();
         }
     }
 
-    private createParticle(): void {
-        const particle = new Graphics();
-        particle.fill({ color: 0xFF3300 });
-        particle.circle(0, 0, 2);
+    private createFlame(): void {
+        const flame = new AnimatedSprite(this.flameTextures);
 
-        // Random starting position at the bottom of the screen
-        particle.x = Math.random() * this.app.screen.width;
-        particle.y = this.app.screen.height;
+        const flameProps = {
+            baseScale: 0.5 + Math.random() * 0.5,
+            moveSpeed: 0.3 + Math.random() * 0.4,
+            sineFreq: 0.001 + Math.random() * 0.002,
+            sineAmp: 0.2 + Math.random() * 0.3,
+            alpha: 0.7 + Math.random() * 0.3
+        };
 
-        // Random velocity
-        (particle as any).vx = (Math.random() - 0.5) * 2;
-        (particle as any).vy = -Math.random() * 5 - 2;
+        const resetPosition = () => {
+            flame.x = Math.random() * this.SPREAD - this.SPREAD / 2;
+            flame.y = Math.random() * this.SPREAD - this.SPREAD / 2 + this.app.screen.height / 2 - this.SPREAD;
+            flame.scale.set(flameProps.baseScale * (0.9 + Math.random() * 0.2));
+            flame.alpha = flameProps.alpha * (0.9 + Math.random() * 0.2);
+            flame.gotoAndPlay(Math.floor(Math.random() * this.flameTextures.length));
+        };
 
-        this.particles.push(particle);
-        this.gameContainer.addChild(particle);
+        flame.x = Math.random() * this.SPREAD - this.SPREAD / 2;
+        flame.y = Math.random() * this.SPREAD - this.SPREAD / 2 + this.app.screen.height / 2 - this.SPREAD;
+
+        flame.anchor.set(0.5);
+        flame.rotation = Math.random() * Math.PI;
+        flame.animationSpeed = 0.25 + Math.random() * 0.1;
+        flame.loop = false;
+        flame.onComplete = resetPosition;
+
+        flame.scale.set(flameProps.baseScale);
+        flame.alpha = flameProps.alpha;
+
+        (flame as any).customProps = flameProps;
+
+        flame.gotoAndPlay(Math.floor(Math.random() * this.flameTextures.length));
+
+        this.flameSprites.push(flame);
+        this.gameContainer.addChild(flame);
     }
 
     protected onUpdate(_delta: number): void {
-        this.particles.forEach((particle) => {
-            particle.x += (particle as any).vx;
-            particle.y += (particle as any).vy;
+        this.flameSprites.forEach((flame) => {
+            if (flame.playing) {
+                const props = (flame as any).customProps;
 
-            // Add some random movement
-            (particle as any).vx += (Math.random() - 0.5) * 0.1;
-            (particle as any).vy -= 0.1; // Accelerate upwards
+                flame.y -= props.moveSpeed;
 
-            // If particle is off screen, reset it
-            if (particle.y < 0) {
-                particle.x = Math.random() * this.app.screen.width;
-                particle.y = this.app.screen.height;
-                (particle as any).vx = (Math.random() - 0.5) * 2;
-                (particle as any).vy = -Math.random() * 5 - 2;
+                flame.x += Math.sin(Date.now() * props.sineFreq) * props.sineAmp;
+
+                flame.scale.set(
+                    props.baseScale * (1 + Math.sin(Date.now() * 0.003) * 0.1)
+                );
+
+                flame.alpha = props.alpha * (0.9 + Math.sin(Date.now() * 0.004) * 0.1);
             }
         });
     }
 
     protected onResize(width: number, height: number): void {
-        this.gameContainer.x = width / 2 - this.gameContainer.width / 2;
-        this.gameContainer.y = height / 2 - this.gameContainer.height / 2;
+        this.gameContainer.x = width / 2;
+        this.gameContainer.y = height / 2;
+
+        this.flameSprites.forEach((flame) => {
+            flame.x = Math.random() * this.SPREAD - this.SPREAD / 2;
+            flame.y = Math.random() * this.SPREAD - this.SPREAD / 2 + this.app.screen.height / 2 - this.SPREAD;
+        });
     }
 
     protected onDestroy(): void {
-        this.particles.forEach(particle => particle.destroy());
-        this.particles = [];
+        this.app.renderer.background.color = 0x1099bb;
+
+        this.flameSprites.forEach(flame => flame.destroy());
+        this.flameSprites = [];
+        this.flameTextures = [];
         this.gameContainer.destroy();
     }
 } 

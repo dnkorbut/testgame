@@ -130,8 +130,3 @@ export class LobbyScene extends Container implements Scene {
         console.log('LobbyScene destroy complete');
     }
 }
-
-export const metadata = {
-    id: 'lobby',
-    name: 'Lobby'
-}; 
