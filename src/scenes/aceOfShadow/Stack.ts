@@ -12,7 +12,7 @@ export enum StackPosition {
 export class Stack extends Container {
     private cards: Card[] = [];
     private stackWidth: number = 0;
-    private readonly MAX_CARD_OFFSET = 10;
+    private readonly MAX_CARD_OFFSET = 20;
     private readonly MAX_CARDS_SHOWN = 20;
     private readonly STACK_OFFSET = 1;
     private readonly cardWidth: number;
@@ -66,6 +66,7 @@ export class Stack extends Container {
     }
 
     private updateCardsPosition(): void {
+        console.log('updateCardsPosition', this.cards.length);
         this.placeholder.visible = this.cards.length === 0;
 
         if (this.cards.length === 0) {

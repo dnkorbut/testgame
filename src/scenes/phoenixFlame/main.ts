@@ -1,4 +1,4 @@
-import { Application, Container, AnimatedSprite, Assets, Texture, Graphics } from 'pixi.js';
+import { Application, Container, AnimatedSprite, Assets, Texture } from 'pixi.js';
 import { BaseScene } from '../../core/BaseScene';
 import { SceneManager } from '../../core/SceneManager';
 
