@@ -36,12 +36,10 @@ export class SceneManager {
         }) as EventListener);
     }
 
-    private handleResize(event: UIEvent): void {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-
-        if (this.currentScene instanceof BaseScene || this.currentScene instanceof LobbyScene) {
-            this.currentScene.resize(width, height);
+    private handleResize(_event: UIEvent): void {
+        this.app.renderer.resize(window.innerWidth, window.innerHeight);
+        if (this.currentScene && 'resize' in this.currentScene) {
+            (this.currentScene as any).resize(window.innerWidth, window.innerHeight);
         }
     }
 

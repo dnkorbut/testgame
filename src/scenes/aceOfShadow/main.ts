@@ -1,4 +1,4 @@
-import { Application, Container, Sprite, Assets, Texture, Rectangle } from 'pixi.js';
+import { Application, Container, Assets, Texture, Rectangle } from 'pixi.js';
 import { BaseScene } from '../../core/BaseScene';
 import { SceneManager } from '../../core/SceneManager';
 import { Card } from './Card';

@@ -99,11 +99,11 @@ export class LobbyScene extends Container implements Scene {
         console.log('LobbyScene init complete');
     }
 
-    public update(delta: number): void {
+    public update(_delta: number): void {
         // No update needed for lobby
     }
 
-    public resize(width: number, height: number): void {
+    public resize(width: number, _height: number): void {
         this.menuItems.forEach((text, index) => {
             text.x = width / 2;
             if (index === this.menuItems.length - 1) {

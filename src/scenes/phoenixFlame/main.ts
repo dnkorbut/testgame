@@ -37,9 +37,8 @@ export class PhoenixFlameScene extends BaseScene {
         this.gameContainer.addChild(particle);
     }
 
-    protected onUpdate(delta: number): void {
-        // Update particle positions
-        this.particles.forEach((particle, index) => {
+    protected onUpdate(_delta: number): void {
+        this.particles.forEach((particle) => {
             particle.x += (particle as any).vx;
             particle.y += (particle as any).vy;
 

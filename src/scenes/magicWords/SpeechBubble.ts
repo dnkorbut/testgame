@@ -2,6 +2,7 @@ import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 
 export class SpeechBubble extends Container {
     private background: Graphics;
+    private textContainer: Container;
     private text: Text;
     private readonly padding = 10;
     private readonly cornerRadius = 10;
@@ -14,6 +15,10 @@ export class SpeechBubble extends Container {
         this.pointUp = pointUp;
         console.log('Creating speech bubble with message:', message, 'pointing up:', pointUp);
 
+        // Create text container
+        this.textContainer = new Container();
+        this.addChild(this.textContainer);
+
         // Create text with style
         const style = new TextStyle({
             fontFamily: 'Arial',
@@ -24,25 +29,35 @@ export class SpeechBubble extends Container {
         });
 
         this.text = new Text({ text: message, style });
-        this.text.x = this.padding;
-        this.text.y = this.padding;
-
-        console.log('Text dimensions:', { width: this.text.width, height: this.text.height });
+        this.textContainer.addChild(this.text);
 
         // Create bubble background
         this.background = new Graphics();
-        this.drawBubble();
-
-        // Add to container in correct order
         this.addChild(this.background);
-        this.addChild(this.text);
+
+        // Move text container above background
+        this.swapChildren(this.background, this.textContainer);
+
+        // Position text relative to the bubble
+        this.updateTextPosition();
+
+        // Draw the bubble
+        this.drawBubble();
 
         // Adjust container position if pointing up
         if (this.pointUp) {
-            this.y = -this.triangleHeight;
+            this.y = -this.triangleHeight / 2;
+            // Move text container down to compensate for the triangle
+            this.textContainer.y = this.triangleHeight / 2;
         }
 
         console.log('Final bubble dimensions:', { width: this.width, height: this.height });
+    }
+
+    private updateTextPosition(): void {
+        // Position text relative to the bubble's shape
+        this.text.x = this.padding;
+        this.text.y = this.padding;
     }
 
     private drawBubble(): void {
@@ -102,8 +117,15 @@ export class SpeechBubble extends Container {
     }
 
     public setText(message: string): void {
-        console.log('Setting new text:', message);
         this.text.text = message;
+        this.updateTextPosition();
         this.drawBubble();
+    }
+
+    public destroy(): void {
+        this.text.destroy();
+        this.background.destroy();
+        this.textContainer.destroy();
+        super.destroy();
     }
 } 

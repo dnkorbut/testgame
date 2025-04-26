@@ -25,23 +25,23 @@ export enum Value {
 }
 
 export class Card extends Container {
-    private frontSprite: Sprite;
-    private backSprite: Sprite;
+    private readonly backSprite: Sprite;
+    private readonly frontSprite: Sprite;
+    private isFaceUp: boolean = false;
+    private isFlipping: boolean = false;
+    private flipProgress: number = 0;
     private highlight_overlay: Sprite | null = null;
-    private isFlipping = false;
-    private flipProgress = 0;
     private readonly FLIP_SPEED = 0.1;
     private readonly value: number;
     private readonly suit: number;
-    private isFaceUp = false;
 
-    constructor(value: number, suit: number, textures: CardTextureGrid, backTexture: Texture) {
+    constructor(_value: number, _suit: number, textures: CardTextureGrid, backTexture: Texture) {
         super();
 
-        this.value = value;
-        this.suit = suit;
+        this.value = _value;
+        this.suit = _suit;
 
-        this.frontSprite = new Sprite(textures[suit][value]);
+        this.frontSprite = new Sprite(textures[this.suit][this.value]);
         this.backSprite = new Sprite(backTexture);
 
         this.frontSprite.anchor.set(0.5);

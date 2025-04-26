@@ -1,5 +1,6 @@
-import { Container, Sprite, Texture, Text, TextStyle } from 'pixi.js';
+import { Container, Sprite, Texture, Text, TextStyle, Graphics } from 'pixi.js';
 import { SpeechBubble } from './SpeechBubble';
+import { Application } from 'pixi.js';
 
 export enum CharacterPosition {
     TopLeft,
@@ -21,8 +22,8 @@ export interface EmojiData {
 
 export class Character extends Container {
     private sprite: Sprite | null = null;
-    private readonly characterWidth: number = 100;
-    private readonly characterHeight: number = 100;
+    private characterWidth: number = 100;
+    private characterHeight: number = 100;
     private containerWidth: number = 800;
     private containerHeight: number = 600;
     private readonly characterPosition: number;
@@ -32,14 +33,16 @@ export class Character extends Container {
     private spriteLoadingPromise: Promise<void> | null = null;
     private nameLabel: Text | null = null;
     private readonly characterName: string;
-    private emojiSprite: Sprite | null = null;
-    private currentEmoji: string | null = null;
+    private facing: 'left' | 'right';
+    private readonly app: Application;
 
-    constructor(data: CharacterData, position: number) {
+    constructor(app: Application, data: CharacterData, position: number) {
         super();
+        this.app = app;
         console.log("Character constructor called with:", data);
         this.characterPosition = position;
         this.characterName = data.name;
+        this.facing = position === 0 ? 'right' : 'left';
         if (data.url) {
             this.spriteLoadingPromise = this.loadImage(data.url);
         } else {
@@ -48,8 +51,8 @@ export class Character extends Container {
             this.sprite.height = this.characterHeight;
             this.sprite.anchor.set(0.5);
             this.addChild(this.sprite);
+            this.createNameLabel();
         }
-        this.createNameLabel();
     }
 
     private createNameLabel(): void {
@@ -84,54 +87,46 @@ export class Character extends Container {
 
     private async loadImage(url: string): Promise<void> {
         try {
-            console.log("Starting to load image:", url);
-            const response = await fetch(url);
-            const blob = await response.blob();
-            const imageUrl = URL.createObjectURL(blob);
+            // Create a new Image element
+            const image = new Image();
+            image.crossOrigin = 'anonymous';  // Enable CORS
 
-            return new Promise<void>((resolve, reject) => {
-                const image = new Image();
-                image.src = imageUrl;
-
-                image.onload = () => {
-                    try {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = image.width;
-                        canvas.height = image.height;
-                        const ctx = canvas.getContext('2d');
-
-                        if (!ctx) {
-                            throw new Error("Failed to get canvas context");
-                        }
-
-                        ctx.drawImage(image, 0, 0);
-                        const texture = Texture.from(canvas);
-                        this.sprite = new Sprite(texture);
-                        this.sprite.width = this.characterWidth;  // Use fixed width
-                        this.sprite.height = this.characterHeight;  // Use fixed height
-                        this.sprite.anchor.set(0.5);
-                        this.addChild(this.sprite);
-                        this.updatePosition();
-                        this.updateNamePosition();  // Update name position after sprite is loaded
-
-                        URL.revokeObjectURL(imageUrl);
-                        console.log("Image loaded successfully:", url);
-                        resolve();
-                    } catch (error) {
-                        console.error("Error in image onload:", error);
-                        reject(error);
-                    }
-                };
-
-                image.onerror = (error) => {
-                    console.error("Image load error:", error);
-                    URL.revokeObjectURL(imageUrl);
-                    reject(new Error(`Failed to load image: ${url}`));
-                };
+            // Create a promise to handle image loading
+            await new Promise((resolve, reject) => {
+                image.onload = () => resolve(image);
+                image.onerror = reject;
+                image.src = url;
             });
+
+            this.characterWidth = image.width;
+            this.characterHeight = image.height;
+
+            // Create a texture from the loaded image
+            const texture = Texture.from(image);
+
+            if (!this.destroyed) {
+                this.sprite = new Sprite(texture);
+
+                this.sprite.width = this.characterWidth;
+                this.sprite.height = this.characterHeight;
+                this.sprite.scale.x = this.facing === 'left' ? -1 : 1;
+                this.sprite.anchor.set(0.5);
+                this.addChild(this.sprite);
+                this.updatePosition();
+
+                this.createNameLabel();
+            }
         } catch (error) {
-            console.error("Failed to load image:", error);
-            throw error;
+            console.error('Error loading character image:', error);
+            // Create a fallback colored rectangle if image fails to load
+            const graphics = new Graphics();
+            graphics.fill({ color: 0x808080 }); // Gray color
+            graphics.rect(-this.characterWidth / 2, -this.characterHeight / 2, this.characterWidth, this.characterHeight);
+
+            this.sprite = new Sprite(this.app.renderer.generateTexture(graphics));
+            this.sprite.anchor.set(0.5);
+            this.addChild(this.sprite);
+            this.updatePosition();
         }
     }
 
@@ -227,77 +222,5 @@ export class Character extends Container {
             this.nameLabel.destroy();
         }
         super.destroy();
-    }
-
-    public async setEmoji(emojiData: EmojiData | null): Promise<void> {
-        // Remove existing emoji if any
-        if (this.emojiSprite) {
-            this.removeChild(this.emojiSprite);
-            this.emojiSprite.destroy();
-            this.emojiSprite = null;
-        }
-
-        // If no emoji data provided, just clear the current emoji
-        if (!emojiData) {
-            this.currentEmoji = null;
-            return;
-        }
-
-        try {
-            // Load emoji image
-            const response = await fetch(emojiData.url);
-            const blob = await response.blob();
-            const imageUrl = URL.createObjectURL(blob);
-
-            return new Promise<void>((resolve, reject) => {
-                const image = new Image();
-                image.src = imageUrl;
-
-                image.onload = () => {
-                    try {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = image.width;
-                        canvas.height = image.height;
-                        const ctx = canvas.getContext('2d');
-
-                        if (!ctx) {
-                            throw new Error("Failed to get canvas context");
-                        }
-
-                        ctx.drawImage(image, 0, 0);
-                        const texture = Texture.from(canvas);
-                        this.emojiSprite = new Sprite(texture);
-
-                        // Size and position the emoji
-                        const emojiSize = 40; // Fixed size for emojis
-                        this.emojiSprite.width = emojiSize;
-                        this.emojiSprite.height = emojiSize;
-                        this.emojiSprite.anchor.set(0.5);
-
-                        // Position emoji above character
-                        this.emojiSprite.x = 0;
-                        this.emojiSprite.y = -this.characterHeight / 2 - emojiSize / 2 - 10;
-
-                        this.addChild(this.emojiSprite);
-                        this.currentEmoji = emojiData.name;
-
-                        URL.revokeObjectURL(imageUrl);
-                        resolve();
-                    } catch (error) {
-                        console.error("Error loading emoji:", error);
-                        reject(error);
-                    }
-                };
-
-                image.onerror = (error) => {
-                    console.error("Emoji load error:", error);
-                    URL.revokeObjectURL(imageUrl);
-                    reject(new Error(`Failed to load emoji: ${emojiData.url}`));
-                };
-            });
-        } catch (error) {
-            console.error("Failed to load emoji:", error);
-            throw error;
-        }
     }
 } 

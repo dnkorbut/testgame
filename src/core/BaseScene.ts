@@ -61,8 +61,8 @@ export abstract class BaseScene extends Container implements Scene {
         this.onUpdate(delta);
     }
 
-    protected onUpdate(delta: number): void {
-        // Optional override in derived classes
+    protected onUpdate(_delta: number): void {
+        // Empty implementation
     }
 
     public resize(width: number, height: number): void {
@@ -71,8 +71,8 @@ export abstract class BaseScene extends Container implements Scene {
         this.backButton.x = width - this.backButton.width - 20;
     }
 
-    protected onResize(width: number, height: number): void {
-        // Optional override in derived classes
+    protected onResize(_width: number, _height: number): void {
+        // Empty implementation
     }
 
     public destroy(): void {

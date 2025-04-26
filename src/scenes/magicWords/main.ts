@@ -58,14 +58,14 @@ export class MagicWordsScene extends BaseScene {
             data.avatars.forEach((avatar) => {
                 const position = positionMap[avatar.name] ?? 0;
                 console.log("Creating character:", avatar.name, avatar.url);
-                const character = new Character(avatar, position);
+                const character = new Character(this.app, avatar, position);
                 this.gameContainer.addChild(character);
                 character.updateDimensions(this.app.screen.width, this.app.screen.height);
                 this.characters.set(avatar.name, character);
             });
 
             // Add dummy character
-            const dummyCharacter = new Character({
+            const dummyCharacter = new Character(this.app, {
                 name: "",
                 url: "", // Empty URL for dummy character
                 position: "topright"
