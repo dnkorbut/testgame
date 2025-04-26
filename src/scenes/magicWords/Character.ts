@@ -163,10 +163,11 @@ export class Character extends Container {
 
             const isTopCharacter = this.characterPosition === CharacterPosition.TopLeft ||
                 this.characterPosition === CharacterPosition.TopRight;
+            const isLeftCharacter = this.characterPosition === CharacterPosition.BottomLeft ||
+                this.characterPosition === CharacterPosition.TopLeft;
             this.speechBubble = new SpeechBubble(message, isTopCharacter, emojiTextures);
 
-            if (this.characterPosition === CharacterPosition.BottomRight ||
-                this.characterPosition === CharacterPosition.TopRight) {
+            if (!isLeftCharacter) {
                 this.speechBubble.x = -this.speechBubble.width - this.sprite.width / 2;
             } else {
                 this.speechBubble.x = this.sprite.width / 2;
@@ -176,6 +177,14 @@ export class Character extends Container {
                 this.speechBubble.y = this.characterHeight;
             } else {
                 this.speechBubble.y = -this.sprite.height - this.speechBubble.height;
+            }
+
+            if (this.app.screen.width < 500) {
+                if (isLeftCharacter) {
+                    this.speechBubble.x -= this.sprite.width;
+                } else {
+                    this.speechBubble.x += this.sprite.width;
+                }
             }
 
             this.addChild(this.speechBubble);

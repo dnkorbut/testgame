@@ -143,7 +143,6 @@ export class MagicWordsScene extends BaseScene {
     }
 
     protected onDestroy(): void {
-        console.log('MagicWordsScene destroy start');
         if (this.dialogueTimeout !== null) {
             window.clearTimeout(this.dialogueTimeout);
         }
