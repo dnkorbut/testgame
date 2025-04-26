@@ -1,30 +1,38 @@
-import * as PIXI from 'pixi.js';
+import { Application } from 'pixi.js';
+import { SceneManager, SceneConfig } from './core/SceneManager';
+import { AceOfShadowsScene } from './scenes/aceOfShadow/main';
+import { MagicWordsScene } from './scenes/magicWords/main';
+import { PhoenixFlameScene } from './scenes/phoenixFlame/main';
 import './style.css';
 
-// Create PixiJS application
-const app = new PIXI.Application({
-  width: 800,
-  height: 600,
-  backgroundColor: 0x1099bb,
-  resolution: window.devicePixelRatio || 1,
-});
+async function init() {
+  const devicePixelRatio = window.devicePixelRatio || 1;
 
-// Add canvas to the page
-document.getElementById('app')?.appendChild(app.view as HTMLCanvasElement);
+  const app = new Application();
+  await app.init({
+    width: window.innerWidth,
+    height: window.innerHeight,
+    backgroundColor: 0x1099bb,
+    antialias: true,
+    autoDensity: true,
+    resolution: devicePixelRatio,
+    resizeTo: window,
+  });
 
-// Create a container for our content
-const container = new PIXI.Container();
-app.stage.addChild(container);
+  const appDiv = document.getElementById('app');
+  if (appDiv) {
+    appDiv.innerHTML = '';
+    appDiv.appendChild(app.canvas);
+  }
 
-// Add a sprite or graphics here
-const graphics = new PIXI.Graphics();
-graphics.beginFill(0xff0000);
-graphics.drawCircle(app.screen.width / 2, app.screen.height / 2, 50);
-graphics.endFill();
-container.addChild(graphics);
+  const scenes: SceneConfig[] = [
+    { id: 'aceofshadows', sceneClass: AceOfShadowsScene },
+    { id: 'magicwords', sceneClass: MagicWordsScene },
+    { id: 'phoenixflame', sceneClass: PhoenixFlameScene }
+  ];
 
-// Animation loop
-app.ticker.add(() => {
-  // Add your game logic here
-  graphics.rotation += 0.01;
-});
+  const sceneManager = new SceneManager(app, scenes);
+  await sceneManager.switchScene('lobby');
+}
+
+init().catch(console.error);
